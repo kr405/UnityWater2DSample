@@ -72,12 +72,15 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _InsideTessFacor: 1.99
     - _Length: 4.84
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _ReflectionScale: 0.3
+    - _RippleAmount: 26.5
+    - _RippleHeight: -77.6
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
@@ -94,5 +97,7 @@ Material:
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _LineColor: {r: 1, g: 1, b: 1, a: 1}
     - _ReflectionScale: {r: 0, g: 0.3, b: 0, a: 0}
+    - _RipplePosition: {r: 0, g: 0, b: 0, a: 0}
     - _Scale: {r: 0, g: 0.3, b: 0, a: 0}
+    - _TessFactor: {r: 1, g: 63.43, b: 1, a: 1}
   m_BuildTextureStacks: []

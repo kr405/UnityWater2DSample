@@ -376,7 +376,7 @@ MonoBehaviour:
   _waveAmount: 0.2
   _waveScale: 3
   _waveSpeed: 30
-  _causticsColor: {r: 0.2396226, g: 0.7908961, b: 1, a: 0.64705884}
+  _causticsColor: {r: 0.2396226, g: 0.7908961, b: 1, a: 0.6666667}
   _causticsScale: 8
   _causticsIntensity: 7
   _aberration: 6
@@ -423,7 +423,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6,
     type: 3}
-  m_Color: {r: 0, g: 0.44432163, b: 1, a: 1}
+  m_Color: {r: 0, g: 0.44432163, b: 1, a: 0.5882353}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0

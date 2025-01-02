@@ -3,33 +3,45 @@ Shader "Custom/Water2D"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _Threshold ("Threshold", Float) = 0
     }
     SubShader
     {
-        Tags { "RenderType"="Transparent" "Queue"="Transparent" }
+        Tags { "RenderType"="Transparent" "Queue"="Transparent" "LightMode"="Universal2D" }
         Blend SrcAlpha OneMinusSrcAlpha
+        ZTest Less
 
         Pass
         {
             HLSLPROGRAM
             #pragma vertex vert
+            #pragma hull hull
+            #pragma domain domain
+            #pragma geometry geom
             #pragma fragment frag
+            #pragma require tessellation tessHW
+            #pragma require geometry
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            struct Attrubutes
+            struct Attributes
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
-                float4 color : COLOR;
+                half4 color : COLOR;
+            };
+
+            # define NUM_CONTROL_POINTS 3
+            struct HSConstOutput
+            {
+                float tessFactor[NUM_CONTROL_POINTS] : SV_TessFactor;
+                float insideTessFactor : SV_InsideTessFactor;
             };
 
             struct Varyings
             {
                 float2 uv : TEXCOORD0;
                 float4 positionHCS : SV_POSITION;
-                float4 color : COLOR;
+                half4 color : COLOR;
             };
 
             TEXTURE2D(_MainTex);
@@ -45,22 +57,24 @@ Shader "Custom/Water2D"
             float _CausticsScale;
             float _CausticsIntensity;
             float _Aberration;
+            int _Smoothness;
+            float _RippleAmount;
+            float _RippleHeight;
 
             CBUFFER_START(UnityPerMaterial)
             float4 _MainTex_ST;
             float4 _MainTex_TexelSize;
-            float _Threshold;
             CBUFFER_END
 
-            float2 random2(float2 input)
+            float2 random2(float2 co)
             {
-                input = float2(dot(input, float2(127.1, 311.7)), dot(input, float2(269.5, 183.3)));
-                return frac(sin(input) * 43758.543123);
+                co = float2(dot(co, float2(127.1, 311.7)), dot(co, float2(269.5, 183.3)));
+                return frac(sin(co) * 43758.543123);
             }
 
-            float cellularNoise(float2 input, int scale)
+            float cellularNoise(float2 co, int scale)
             {
-                input = input * scale;
+                co = co * scale;
                 float min_dist = 1;
 
                 for (int i = -1; i <= 1; i++)
@@ -68,28 +82,85 @@ Shader "Custom/Water2D"
                     for (int j = -1; j <= 1; j++)
                     {
                         float2 n = float2(i, j);
-                        float2 p = random2(floor(input) + n);
+                        float2 p = random2(floor(co) + n);
                         p = sin(p * 10 + _Time.y) * 0.5 + 0.5;
-                        float dist = distance(frac(input), n + p);
+                        float dist = distance(frac(co), n + p);
                         min_dist = min(min_dist, dist);
                     }
                 }
                 return min_dist;
             }
 
-            float caustics(float2 input)
+            float caustics(float2 co)
             {
-                float noise = abs(cellularNoise(input, _CausticsScale));
-                return pow(noise, _CausticsIntensity);
+                float noise = cellularNoise(co, _CausticsScale);
+                return pow(abs(noise), _CausticsIntensity);
             }
 
-            Varyings vert (Attrubutes IN)
+            Attributes vert (Attributes IN)
             {
-                Varyings OUT;
-                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+                Attributes OUT = IN;
                 OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
-                OUT.color = IN.color;
                 return OUT;
+            }
+            
+            [domain("tri")]
+            [partitioning("integer")]
+            [outputtopology("triangle_cw")]
+            [patchconstantfunc("hullConst")]
+            [outputcontrolpoints(NUM_CONTROL_POINTS)]
+            Attributes hull(InputPatch<Attributes, NUM_CONTROL_POINTS> IN, uint id : SV_OutputControlPointID)
+            {
+                Attributes OUT;
+                OUT.positionOS = IN[id].positionOS;
+                OUT.uv = IN[id].uv;
+                OUT.color = IN[id].color;
+                return OUT;
+            }
+
+            HSConstOutput hullConst(InputPatch<Attributes, NUM_CONTROL_POINTS> IN)
+            {
+                HSConstOutput OUT;
+                OUT.tessFactor[0] = OUT.tessFactor[2] = OUT.insideTessFactor = 1;
+                OUT.tessFactor[1] = _Smoothness;
+                return OUT;
+            }
+
+            [domain("tri")]
+            Attributes domain(HSConstOutput IN, const OutputPatch<Attributes, NUM_CONTROL_POINTS> patch, float3 location : SV_DomainLocation)
+            {
+                Attributes OUT;
+                OUT.positionOS =
+                    patch[0].positionOS * location.x +
+                    patch[1].positionOS * location.y +
+                    patch[2].positionOS * location.z;
+                OUT.uv =
+                    patch[0].uv * location.x +
+                    patch[1].uv * location.y +
+                    patch[2].uv * location.z;
+                OUT.color = 
+                    patch[0].color * location.x +
+                    patch[1].color * location.y +
+                    patch[2].color * location.z;
+                return OUT;
+            }
+
+            [maxvertexcount(3)]
+            void geom(triangle Attributes IN[3], inout TriangleStream<Varyings> outStream)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    Varyings OUT;
+
+                    float4 positionOS = IN[i].positionOS;
+                    float2 uv = IN[i].uv;
+                    positionOS.y += step(1, uv.y) * cos((uv.x + _Time.x) * _RippleAmount) * _CameraSortingLayerTexture_TexelSize.x * _RippleHeight;
+
+                    OUT.positionHCS = TransformObjectToHClip(positionOS.xyz);
+                    OUT.uv = uv;
+                    OUT.color = IN[i].color;
+                    outStream.Append(OUT);
+                }
             }
 
             half4 frag (Varyings IN) : SV_Target
@@ -100,9 +171,7 @@ Shader "Custom/Water2D"
 
                 // _CameraSortingLayerTextureのuv座標を求める.
                 float2 uv = IN.positionHCS.xy / _ScaledScreenParams.xy;
-                // 縦向きに波打つようにu値を変換.
                 uv.x += cos(waveFactor) * waveScale;
-                //水面より上の色が反射されるようにv値を変換.
                 uv.y += (1 - IN.uv.y) * _Scale.y * 2;
 
                 // 水面の色を決定する.
@@ -110,7 +179,6 @@ Shader "Custom/Water2D"
                 half4 baseColor = mirrorColor * IN.color;
 
                 // コースティクスの強さを求める.
-                // 色収差をつけるため、r値とg値のuvをずらして色ごとに計算.
                 float r = caustics(IN.uv + _MainTex_TexelSize.xy * _Aberration);
                 float g = caustics(IN.uv);
                 float b = caustics(IN.uv - _MainTex_TexelSize.xy * _Aberration);

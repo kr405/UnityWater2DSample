@@ -12,6 +12,9 @@ namespace Shader2DSample
         [SerializeField, Range(0.0f, 10.0f)] float _causticsScale;
         [SerializeField, Range(0.0f, 10.0f)] float _causticsIntensity;
         [SerializeField, Range(-10.0f, 10.0f)] float _aberration;
+        [SerializeField, Range(1.0f, 100.0f)] int _smoothness;
+        [SerializeField, Range(0.0f, 100.0f)] float _rippleAmount;
+        [SerializeField, Range(0.0f, 100.0f)] float _rippleHeight;
 
         readonly string _shaderName = "Custom/Water2D";
         readonly int _scaleId = Shader.PropertyToID("_Scale");
@@ -22,6 +25,9 @@ namespace Shader2DSample
         readonly int _causticsScaleId = Shader.PropertyToID("_CausticsScale");
         readonly int _causticsIntensityId = Shader.PropertyToID("_CausticsIntensity");
         readonly int _aberrationId = Shader.PropertyToID("_Aberration");
+        readonly int _smoothnessId = Shader.PropertyToID("_Smoothness");
+        readonly int _rippleAmountId = Shader.PropertyToID("_RippleAmount");
+        readonly int _rippleHeightId = Shader.PropertyToID("_RippleHeight");
 
         Shader _shader;
         Material _material;
@@ -48,6 +54,9 @@ namespace Shader2DSample
             _material.SetFloat(_causticsScaleId, _causticsScale);
             _material.SetFloat(_causticsIntensityId, _causticsIntensity);
             _material.SetFloat(_aberrationId, _aberration);
+            _material.SetInt(_smoothnessId, _smoothness);
+            _material.SetFloat(_rippleAmountId, _rippleAmount);
+            _material.SetFloat(_rippleHeightId, _rippleHeight);
         }
 
         Vector3 Scale()
