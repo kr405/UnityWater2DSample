@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Shader2DSample
@@ -86,7 +85,16 @@ namespace Shader2DSample
         }
 
         /// <summary>
-        /// オブジェクトの接触をシェーダーに反映する.
+        /// シェーダーの接触位置の配列を更新する.
+        /// </summary>
+        void UpdateContactPoints()
+        {
+            _material.SetVectorArray(_contactPointsId, _contactPoints);
+            _material.SetInt(_numContactPoints, _contactPoints.Count);
+        }
+
+        /// <summary>
+        /// 水面に接触したオブジェクトをリストに反映する.
         /// </summary>
         /// <param name="collision">接触しているコライダー.</param>
         void AddContactPoint(Collider2D collision)
@@ -107,15 +115,12 @@ namespace Shader2DSample
                 _contactedObjects.Add(id);
                 _contactPoints.Add(contactPoint);
             }
-            else
-            {
-                return;
-            }
+            else return;
             UpdateContactPoints();
         }
 
         /// <summary>
-        /// オブジェクトの離脱をシェーダーに反映する.
+        /// 水面から離脱したオブジェクトをリストから削除する.
         /// </summary>
         /// <param name="collision"></param>
         void RemoveContactPoint(Collider2D collision)
@@ -130,15 +135,6 @@ namespace Shader2DSample
                 UpdateContactPoints();
             }
         }
-        
-        /// <summary>
-        /// シェーダーの接触位置の配列を更新する.
-        /// </summary>
-        void UpdateContactPoints()
-        {
-            _material.SetVectorArray(_contactPointsId, _contactPoints);
-            _material.SetInt(_numContactPoints, _contactPoints.Count);
-        }
 
         void OnTriggerStay2D(Collider2D collision)
         {
@@ -148,6 +144,6 @@ namespace Shader2DSample
         void OnTriggerExit2D(Collider2D collision)
         {
             RemoveContactPoint(collision);
-        }        
+        }
     }
 }    

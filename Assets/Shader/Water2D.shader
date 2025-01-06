@@ -47,7 +47,7 @@ Shader "Custom/Water2D"
             float _RippleAmount;
             float _RippleScale;
             float _RippleSpeed;
-            # define MAX_POINT_COUNT 20
+            #define MAX_POINT_COUNT 20
             float4 _ContactPoints[MAX_POINT_COUNT];
             int _NumPoints;
 
@@ -101,7 +101,7 @@ Shader "Custom/Water2D"
             
             half4 frag (Varyings IN) : SV_Target
             {
-                // 最も近いオブジェクトまでの距離を取得する.
+                // 接触している最も近いオブジェクトまでの距離を取得する.
                 float minDist = length(_ScaledScreenParams.xy);
                 for (int i = 0; i < _NumPoints; i++)
                 {
